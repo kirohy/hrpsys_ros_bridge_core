@@ -1,0 +1,14 @@
+BasedOnStyle: LLVM
+Standard: c++14
+
+AlignConsecutiveAssignments: true
+AllowShortBlocksOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: true
+ColumnLimit: 160
+IndentWidth: 4
+UseTab: Never
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: All
+

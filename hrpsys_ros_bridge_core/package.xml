@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>hrpsys_ros_bridge_core</name>
+  <version>0.0.0</version>
+  <description>metapackage for hrpsys_ros_bridge</description>
+
+  <maintainer email="yoshioka@jsk.imi.i.u-tokyo.ac.jp">Hiroki Yoshioka</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>seq_state_ros_bridge</exec_depend>
+
+  <export>
+    <metapackage/>
+  </export>
+</package>
