@@ -1,20 +1,22 @@
 #include <seq_state_ros_bridge/HrpsysSeqStateROSBridge2Impl.h>
 
-static const char *hrpsysseqstaterosbridge2impl_spec[] = {"implementation_id", "HrpsysSeqStateROSBridge2Impl", "type_name", "HrpsysSeqStateROSBridge2Impl",
-                                                          "description", "hrpsys seq state - ros bridge", "version", "1.0", "vendor", "JSK", "category",
-                                                          "example", "activity_type", "SPORADIC", "kind", "DataFlowComponent", "max_instance", "10", "language",
-                                                          "C++", "lang_type", "compile",
-                                                          // Configuration variables
-                                                          ""};
+static const char *hrpsysseqstaterosbridge2impl_spec[] = {
+    "implementation_id", "HrpsysSeqStateROSBridge2Impl", "type_name", "HrpsysSeqStateROSBridge2Impl", "description",
+    "hrpsys seq state - ros bridge", "version", "1.0", "vendor", "JSK", "category", "example", "activity_type",
+    "SPORADIC", "kind", "DataFlowComponent", "max_instance", "10", "language", "C++", "lang_type", "compile",
+    // Configuration variables
+    ""};
 
 HrpsysSeqStateROSBridge2Impl::HrpsysSeqStateROSBridge2Impl(RTC::Manager *manager)
-    : RTC::DataFlowComponentBase(manager), m_rsangleIn("rsangle", m_rsangle), m_mcangleIn("mcangle", m_mcangle), m_baseTformIn("baseTform", m_baseTform),
-      m_baseRpyIn("baseRpy", m_baseRpy), m_rsvelIn("rsvel", m_rsvel), m_rstorqueIn("rstorque", m_rstorque), m_servoStateIn("servoState", m_servoState),
-      m_rszmpIn("rszmp", m_rszmp), m_rsrefCPIn("rsrefCapturePoint", m_rsrefCP), m_rsactCPIn("rsactCapturePoint", m_rsactCP),
+    : RTC::DataFlowComponentBase(manager), m_rsangleIn("rsangle", m_rsangle), m_mcangleIn("mcangle", m_mcangle),
+      m_baseTformIn("baseTform", m_baseTform), m_baseRpyIn("baseRpy", m_baseRpy), m_rsvelIn("rsvel", m_rsvel),
+      m_rstorqueIn("rstorque", m_rstorque), m_servoStateIn("servoState", m_servoState), m_rszmpIn("rszmp", m_rszmp),
+      m_rsrefCPIn("rsrefCapturePoint", m_rsrefCP), m_rsactCPIn("rsactCapturePoint", m_rsactCP),
       m_rsCOPInfoIn("rsCOPInfo", m_rsCOPInfo), m_emergencyModeIn("emergencyMode", m_emergencyMode),
-      m_refContactStatesIn("refContactStates", m_refContactStates), m_actContactStatesIn("actContactStates", m_actContactStates),
-      m_controlSwingSupportTimeIn("controlSwingSupportTime", m_controlSwingSupportTime), m_mctorqueOut("mctorque", m_mctorque),
-      m_SequencePlayerServicePort("SequencePlayer2Service") {}
+      m_refContactStatesIn("refContactStates", m_refContactStates),
+      m_actContactStatesIn("actContactStates", m_actContactStates),
+      m_controlSwingSupportTimeIn("controlSwingSupportTime", m_controlSwingSupportTime),
+      m_mctorqueOut("mctorque", m_mctorque), m_SequencePlayerServicePort("SequencePlayer2Service") {}
 
 HrpsysSeqStateROSBridge2Impl::~HrpsysSeqStateROSBridge2Impl() {}
 
@@ -98,12 +100,14 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         registerInPort(s->name().c_str(), *m_rsforceIn[i]);
         m_rsforceName.push_back(s->name());
         // off force and moment
-        m_offforceIn[i] = std::make_unique<RTC::InPort<RTC::TimedDoubleSeq>>(std::string("off_" + s->name()).c_str(), m_offforce[i]);
+        m_offforceIn[i] =
+            std::make_unique<RTC::InPort<RTC::TimedDoubleSeq>>(std::string("off_" + s->name()).c_str(), m_offforce[i]);
         m_offforce[i].data.length(6);
         registerInPort(s->name().c_str(), *m_offforceIn[i]);
         m_offforceName.push_back(std::string("off_" + s->name()));
         // ref force and moment
-        m_mcforceIn[i] = std::make_unique<RTC::InPort<RTC::TimedDoubleSeq>>(std::string("ref_" + s->name()).c_str(), m_mcforce[i]);
+        m_mcforceIn[i] =
+            std::make_unique<RTC::InPort<RTC::TimedDoubleSeq>>(std::string("ref_" + s->name()).c_str(), m_mcforce[i]);
         m_mcforce[i].data.length(6);
         registerInPort(std::string("ref_" + s->name()).c_str(), *m_mcforceIn[i]);
         m_mcforceName.push_back(std::string("ref_" + s->name()));
@@ -240,8 +244,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
     m_gsensorName.resize(nacc);
     for (unsigned int i = 0; i < nacc; i++) {
         cnoid::AccelerationSensorPtr s = acc_sensors[i];
-        m_gsensorIn[i]                 = std::make_unique<RTC::InPort<RTC::TimedAcceleration3D>>(s->name().c_str(), m_gsensor[i]);
-        m_gsensorName[i]               = s->name().c_str();
+        m_gsensorIn[i]   = std::make_unique<RTC::InPort<RTC::TimedAcceleration3D>>(s->name().c_str(), m_gsensor[i]);
+        m_gsensorName[i] = s->name().c_str();
         registerInPort(s->name().c_str(), *m_gsensorIn[i]);
         RTC_INFO_STREAM(i << " acceleration sensor : " << s->name().c_str());
 
@@ -262,8 +266,9 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
     m_gyrometerName.resize(ngyro);
     for (unsigned int i = 0; i < ngyro; i++) {
         cnoid::RateGyroSensorPtr s = gyro_sensors[i];
-        m_gyrometerIn[i]           = std::make_unique<RTC::InPort<RTC::TimedAngularVelocity3D>>(s->name().c_str(), m_gyrometer[i]);
-        m_gyrometerName[i]         = s->name().c_str();
+        m_gyrometerIn[i] =
+            std::make_unique<RTC::InPort<RTC::TimedAngularVelocity3D>>(s->name().c_str(), m_gyrometer[i]);
+        m_gyrometerName[i] = s->name().c_str();
         registerInPort(s->name().c_str(), *m_gyrometerIn[i]);
         RTC_INFO_STREAM(i << " rate sensor : " << s->name().c_str());
 
@@ -554,7 +559,8 @@ ec_id)
 extern "C" {
 
 void HrpsysSeqStateROSBridge2ImplInit(RTC::Manager *manager) {
-    coil::Properties profile(hrpsysseqstaterosbridge2impl_spec);
-    manager->registerFactory(profile, RTC::Create<HrpsysSeqStateROSBridge2Impl>, RTC::Delete<HrpsysSeqStateROSBridge2Impl>);
+    RTC::Properties profile(hrpsysseqstaterosbridge2impl_spec);
+    manager->registerFactory(profile, RTC::Create<HrpsysSeqStateROSBridge2Impl>,
+                             RTC::Delete<HrpsysSeqStateROSBridge2Impl>);
 }
 };

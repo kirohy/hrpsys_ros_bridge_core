@@ -1,6 +1,6 @@
+#include <robot_hardware/idl/RobotHardware2Service.hh>
 #include <rtm/idl/RTC.hh>
 #include <seq_state_ros_bridge/HrpsysSeqStateROSBridge2.h>
-#include <robot_hardware/idl/RobotHardware2Service.hh>
 
 static const char *hrpsysseqstaterosbridge2_spec[] = {"implementation_id",
                                                       "HrpsysSeqStateROSBridge2",
@@ -31,8 +31,8 @@ HrpsysSeqStateROSBridge2::HrpsysSeqStateROSBridge2(RTC::Manager *manager)
 #ifdef USE_PR2_CONTROLLERS_MSGS
       joint_trajectory_server(nh, "fullbody_controller/joint_trajectory_action", false),
 #endif
-      follow_joint_trajectory_server(nh, "fullbody_controller/follow_joint_trajectory_action", false), HrpsysSeqStateROSBridge2Impl(manager),
-      follow_action_initialized(false), prev_odom_acquired(false) {
+      follow_joint_trajectory_server(nh, "fullbody_controller/follow_joint_trajectory_action", false),
+      HrpsysSeqStateROSBridge2Impl(manager), follow_action_initialized(false), prev_odom_acquired(false) {
     // ros
     ros::NodeHandle pnh("~");
     pnh.param("publish_sensor_transforms", publish_sensor_transforms, true);
@@ -40,26 +40,35 @@ HrpsysSeqStateROSBridge2::HrpsysSeqStateROSBridge2(RTC::Manager *manager)
 
     // tf callback is isolated to have independent execution rate
     tf_transforms.clear();
-    periodic_update_timer = pnh.createTimer(ros::Duration(1.0 / tf_rate), boost::bind(&HrpsysSeqStateROSBridge2::periodicTimerCallback, this, _1));
+    periodic_update_timer = pnh.createTimer(ros::Duration(1.0 / tf_rate),
+                                            boost::bind(&HrpsysSeqStateROSBridge2::periodicTimerCallback, this, _1));
 
 #ifdef USE_PR2_CONTROLLERS_MSGS
-    joint_trajectory_server.registerGoalCallback(boost::bind(&HrpsysSeqStateROSBridge2::onJointTrajectoryActionGoal, this));
-    joint_trajectory_server.registerPreemptCallback(boost::bind(&HrpsysSeqStateROSBridge2::onJointTrajectoryActionPreempt, this));
+    joint_trajectory_server.registerGoalCallback(
+        boost::bind(&HrpsysSeqStateROSBridge2::onJointTrajectoryActionGoal, this));
+    joint_trajectory_server.registerPreemptCallback(
+        boost::bind(&HrpsysSeqStateROSBridge2::onJointTrajectoryActionPreempt, this));
 #endif
-    follow_joint_trajectory_server.registerGoalCallback(boost::bind(&HrpsysSeqStateROSBridge2::onFollowJointTrajectoryActionGoal, this));
-    follow_joint_trajectory_server.registerPreemptCallback(boost::bind(&HrpsysSeqStateROSBridge2::onFollowJointTrajectoryActionPreempt, this));
-    sendmsg_srv                   = nh.advertiseService(std::string("sendmsg"), &HrpsysSeqStateROSBridge2::sendMsg, this);
-    set_sensor_transformation_srv = nh.advertiseService("set_sensor_transformation", &HrpsysSeqStateROSBridge2::setSensorTransformation, this);
-    joint_state_pub               = nh.advertise<sensor_msgs::JointState>("joint_states", 1);
+    follow_joint_trajectory_server.registerGoalCallback(
+        boost::bind(&HrpsysSeqStateROSBridge2::onFollowJointTrajectoryActionGoal, this));
+    follow_joint_trajectory_server.registerPreemptCallback(
+        boost::bind(&HrpsysSeqStateROSBridge2::onFollowJointTrajectoryActionPreempt, this));
+    sendmsg_srv = nh.advertiseService(std::string("sendmsg"), &HrpsysSeqStateROSBridge2::sendMsg, this);
+    set_sensor_transformation_srv =
+        nh.advertiseService("set_sensor_transformation", &HrpsysSeqStateROSBridge2::setSensorTransformation, this);
+    joint_state_pub = nh.advertise<sensor_msgs::JointState>("joint_states", 1);
 #ifdef USE_PR2_CONTROLLERS_MSGS
-    joint_controller_state_pub = nh.advertise<pr2_controllers_msgs::JointTrajectoryControllerState>("/fullbody_controller/state", 1);
+    joint_controller_state_pub =
+        nh.advertise<pr2_controllers_msgs::JointTrajectoryControllerState>("/fullbody_controller/state", 1);
 #else
-    joint_controller_state_pub = nh.advertise<control_msgs::JointTrajectoryControllerState>("/fullbody_controller/state", 1);
+    joint_controller_state_pub =
+        nh.advertise<control_msgs::JointTrajectoryControllerState>("/fullbody_controller/state", 1);
 #endif
-    trajectory_command_sub = nh.subscribe("/fullbody_controller/command", 1, &HrpsysSeqStateROSBridge2::onTrajectoryCommandCB, this);
-    mot_states_pub         = nh.advertise<seq_state_ros_bridge::MotorStates>("/motor_states", 1);
-    odom_pub               = nh.advertise<nav_msgs::Odometry>("/odom", 1);
-    imu_pub                = nh.advertise<sensor_msgs::Imu>("/imu", 1);
+    trajectory_command_sub =
+        nh.subscribe("/fullbody_controller/command", 1, &HrpsysSeqStateROSBridge2::onTrajectoryCommandCB, this);
+    mot_states_pub = nh.advertise<seq_state_ros_bridge::MotorStates>("/motor_states", 1);
+    odom_pub       = nh.advertise<nav_msgs::Odometry>("/odom", 1);
+    imu_pub        = nh.advertise<sensor_msgs::Imu>("/imu", 1);
 
     // is use_sim_time is set and no one publishes clock, publish clock time
     use_sim_time = ros::Time::isSimTime();
@@ -140,7 +149,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onInitialize() {
         fsensor_pub[i + m_rsforceIn.size()] = nh.advertise<geometry_msgs::WrenchStamped>(m_offforceName[i], 10);
     }
     for (unsigned int i = 0; i < m_mcforceIn.size(); i++) {
-        fsensor_pub[i + m_rsforceIn.size() + m_offforceIn.size()] = nh.advertise<geometry_msgs::WrenchStamped>(m_mcforceName[i], 10);
+        fsensor_pub[i + m_rsforceIn.size() + m_offforceIn.size()] =
+            nh.advertise<geometry_msgs::WrenchStamped>(m_mcforceName[i], 10);
     }
     zmp_pub                = nh.advertise<geometry_msgs::PointStamped>("/zmp", 10);
     ref_cp_pub             = nh.advertise<geometry_msgs::PointStamped>("/ref_capture_point", 10);
@@ -164,8 +174,8 @@ void HrpsysSeqStateROSBridge2::onJointTrajectory(trajectory_msgs::JointTrajector
     ROS_INFO_STREAM("[" << getInstanceName() << "] @onJointTrajectoryAction ");
     // std::cerr << goal->trajectory.joint_names.size() << std::endl;
 
-    OpenHRP::dSequenceSequence angles;
-    OpenHRP::dSequence duration;
+    sequence_player::dSequenceSequence angles;
+    sequence_player::dSequence duration;
 
     angles.length(trajectory.points.size());
     duration.length(trajectory.points.size());
@@ -188,8 +198,8 @@ void HrpsysSeqStateROSBridge2::onJointTrajectory(trajectory_msgs::JointTrajector
             if (l)
                 l->q() = point.positions[j];
             else
-                ROS_WARN_STREAM_ONCE("[" << getInstanceName() << "] @onJointTrajectoryAction : joint named " << joint_names[j]
-                                         << " is not found. Skipping ...");
+                ROS_WARN_STREAM_ONCE("[" << getInstanceName() << "] @onJointTrajectoryAction : joint named "
+                                         << joint_names[j] << " is not found. Skipping ...");
         }
 
         body->calcForwardKinematics();
@@ -198,9 +208,11 @@ void HrpsysSeqStateROSBridge2::onJointTrajectory(trajectory_msgs::JointTrajector
             angles[i][j] = body->joint(j)->q();
         }
 
-        ROS_INFO_STREAM("[" << getInstanceName() << "] @onJointTrajectoryAction : time_from_start " << trajectory.points[i].time_from_start.toSec());
+        ROS_INFO_STREAM("[" << getInstanceName() << "] @onJointTrajectoryAction : time_from_start "
+                            << trajectory.points[i].time_from_start.toSec());
         if (i > 0) {
-            duration[i] = trajectory.points[i].time_from_start.toSec() - trajectory.points[i - 1].time_from_start.toSec();
+            duration[i] =
+                trajectory.points[i].time_from_start.toSec() - trajectory.points[i - 1].time_from_start.toSec();
         } else { // if i == 0
             duration[i] = trajectory.points[i].time_from_start.toSec();
             if (std::abs(duration[i]) < 0.001)
@@ -246,7 +258,9 @@ void HrpsysSeqStateROSBridge2::onFollowJointTrajectoryActionPreempt() {
     if (!follow_joint_trajectory_server.isNewGoalAvailable()) { m_service0->clearJointAngles(); }
 }
 
-void HrpsysSeqStateROSBridge2::onTrajectoryCommandCB(const trajectory_msgs::JointTrajectoryConstPtr &msg) { onJointTrajectory(*msg); }
+void HrpsysSeqStateROSBridge2::onTrajectoryCommandCB(const trajectory_msgs::JointTrajectoryConstPtr &msg) {
+    onJointTrajectory(*msg);
+}
 
 bool HrpsysSeqStateROSBridge2::setSensorTransformation(seq_state_ros_bridge::SetSensorTransformation::Request &req,
                                                        seq_state_ros_bridge::SetSensorTransformation::Response &res) {
@@ -255,7 +269,8 @@ bool HrpsysSeqStateROSBridge2::setSensorTransformation(seq_state_ros_bridge::Set
     return true;
 }
 
-bool HrpsysSeqStateROSBridge2::sendMsg(dynamic_reconfigure::Reconfigure::Request &req, dynamic_reconfigure::Reconfigure::Response &res) {
+bool HrpsysSeqStateROSBridge2::sendMsg(dynamic_reconfigure::Reconfigure::Request &req,
+                                       dynamic_reconfigure::Reconfigure::Response &res) {
     if (req.config.strs.size() == 2) {
         res.config.strs = req.config.strs;
         ROS_INFO_STREAM("[" << getInstanceName() << "] @sendMsg [" << req.config.strs[0].value << "]");
@@ -263,14 +278,14 @@ bool HrpsysSeqStateROSBridge2::sendMsg(dynamic_reconfigure::Reconfigure::Request
             ROS_INFO_STREAM("[" << getInstanceName() << "] @sendMsg [" << req.config.strs[1].value << "]");
             if (req.config.strs[1].value == ":linear") {
                 ROS_DEBUG("set interpolation mode -> :linear");
-                m_service0->setInterpolationMode(OpenHRP::SequencePlayer2Service::LINEAR);
+                m_service0->setInterpolationMode(sequence_player::SequencePlayer2Service::LINEAR);
             } else {
                 ROS_DEBUG("set interpolation mode -> :hoffarbib");
-                m_service0->setInterpolationMode(OpenHRP::SequencePlayer2Service::HOFFARBIB);
+                m_service0->setInterpolationMode(sequence_player::SequencePlayer2Service::HOFFARBIB);
             }
         } else if (req.config.strs[0].value == "setJointAngles") {
             std::istringstream iss(req.config.strs[1].value);
-            OpenHRP::dSequence js;
+            sequence_player::dSequence js;
             js.length(body->numJoints());
             double duration;
             for (size_t ii = 0; ii < body->numJoints(); ii++)
@@ -317,7 +332,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
                 mot_states.header.stamp = tm_on_execute;
             }
             if (m_servoState.data.length() != body->numJoints()) {
-                std::cerr << __PRETTY_FUNCTION__ << "m_servoState.data.length() = " << m_servoState.data.length() << std::endl;
+                std::cerr << __PRETTY_FUNCTION__ << "m_servoState.data.length() = " << m_servoState.data.length()
+                          << std::endl;
                 std::cerr << __PRETTY_FUNCTION__ << "body->numJoints() = " << body->numJoints() << std::endl;
                 for (unsigned int i = 0; i < body->numJoints(); i++)
                     std::cerr << body->joint(i)->name() << " ";
@@ -346,21 +362,28 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             for (unsigned int i = 0; i < joint_size; i++) {
                 mot_states.name[i] = body->joint(i)->name();
                 mot_states.calib_state[i] =
-                    (m_servoState.data[i][0] & OpenHRP::RobotHardware2Service::CALIB_STATE_MASK) >> OpenHRP::RobotHardware2Service::CALIB_STATE_SHIFT;
+                    (m_servoState.data[i][0] & robot_hardware::RobotHardware2Service::CALIB_STATE_MASK) >>
+                    robot_hardware::RobotHardware2Service::CALIB_STATE_SHIFT;
                 mot_states.servo_state[i] =
-                    (m_servoState.data[i][0] & OpenHRP::RobotHardware2Service::SERVO_STATE_MASK) >> OpenHRP::RobotHardware2Service::SERVO_STATE_SHIFT;
+                    (m_servoState.data[i][0] & robot_hardware::RobotHardware2Service::SERVO_STATE_MASK) >>
+                    robot_hardware::RobotHardware2Service::SERVO_STATE_SHIFT;
                 mot_states.power_state[i] =
-                    (m_servoState.data[i][0] & OpenHRP::RobotHardware2Service::POWER_STATE_MASK) >> OpenHRP::RobotHardware2Service::POWER_STATE_SHIFT;
+                    (m_servoState.data[i][0] & robot_hardware::RobotHardware2Service::POWER_STATE_MASK) >>
+                    robot_hardware::RobotHardware2Service::POWER_STATE_SHIFT;
                 mot_states.servo_alarm[i] =
-                    (m_servoState.data[i][0] & OpenHRP::RobotHardware2Service::SERVO_ALARM_MASK) >> OpenHRP::RobotHardware2Service::SERVO_ALARM_SHIFT;
+                    (m_servoState.data[i][0] & robot_hardware::RobotHardware2Service::SERVO_ALARM_MASK) >>
+                    robot_hardware::RobotHardware2Service::SERVO_ALARM_SHIFT;
                 mot_states.driver_temp[i] =
-                    (m_servoState.data[i][0] & OpenHRP::RobotHardware2Service::DRIVER_TEMP_MASK) >> OpenHRP::RobotHardware2Service::DRIVER_TEMP_SHIFT;
+                    (m_servoState.data[i][0] & robot_hardware::RobotHardware2Service::DRIVER_TEMP_MASK) >>
+                    robot_hardware::RobotHardware2Service::DRIVER_TEMP_SHIFT;
                 for (unsigned int j = 0; j < extra_size; j++) {
                     mot_states.extra_data.data[i * extra_size + j] = ((float *)&(m_servoState.data[i][1]))[j];
                 }
             }
             mot_states_pub.publish(mot_states);
-        } catch (const std::runtime_error &e) { ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rservoStateIn failed with " << e.what()); }
+        } catch (const std::runtime_error &e) {
+            ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rservoStateIn failed with " << e.what());
+        }
     } // end: servoStateIn
 
     // rstorqueIn
@@ -370,7 +393,9 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             // for ( unsigned int i = 0; i < m_rstorque.data.length() ; i++ )
             // std::cerr << m_rstorque.data[i] << " "; std::cerr << std::endl;
 
-        } catch (const std::runtime_error &e) { ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rstorqueIn failed with " << e.what()); }
+        } catch (const std::runtime_error &e) {
+            ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rstorqueIn failed with " << e.what());
+        }
     } // end: rstorqueIn
 
     // rsvelIn
@@ -379,7 +404,9 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             m_rsvelIn.read();
             // for ( unsigned int i = 0; i < m_rstorque.data.length() ; i++ )
             // std::cerr << m_rstorque.data[i] << " "; std::cerr << std::endl;
-        } catch (const std::runtime_error &e) { ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rsvelIn failed with " << e.what()); }
+        } catch (const std::runtime_error &e) {
+            ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rsvelIn failed with " << e.what());
+        }
     } // end: rsvelIn
 
     // m_in_rsangleIn
@@ -390,7 +417,9 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             m_rsangleIn.read();
             // for ( unsigned int i = 0; i < m_rsangle.data.length() ; i++ ) std::cerr
             // << m_rsangle.data[i] << " "; std::cerr << std::endl;
-        } catch (const std::runtime_error &e) { ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rsangleIn failed with " << e.what()); }
+        } catch (const std::runtime_error &e) {
+            ROS_ERROR_STREAM("[" << getInstanceName() << "] m_rsangleIn failed with " << e.what());
+        }
         //
         sensor_msgs::JointState joint_state;
         if (use_hrpsys_time) {
@@ -409,11 +438,13 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         m_mutex.lock();
         body->calcForwardKinematics();
         if (m_rsangle.data.length() < body->numJoints()) {
-            ROS_ERROR_STREAM("rsangle.data.length(" << m_rsangle.data.length() << ") is not equal to body->numJoints(" << body->numJoints() << ")");
+            ROS_ERROR_STREAM("rsangle.data.length(" << m_rsangle.data.length() << ") is not equal to body->numJoints("
+                                                    << body->numJoints() << ")");
             m_mutex.unlock();
             return RTC::RTC_OK;
         } else if (m_rsangle.data.length() != body->numJoints()) {
-            ROS_INFO_STREAM("rsangle.data.length(" << m_rsangle.data.length() << ") is not equal to body->numJoints(" << body->numJoints() << ")");
+            ROS_INFO_STREAM("rsangle.data.length(" << m_rsangle.data.length() << ") is not equal to body->numJoints("
+                                                   << body->numJoints() << ")");
         }
         for (unsigned int i = 0; i < body->numJoints(); i++) {
             body->joint(i)->q() = m_rsangle.data[i];
@@ -460,7 +491,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             double time_from_prev = (joint_state.header.stamp - prev_joint_state.header.stamp).toSec();
             if (time_from_prev > 0 && prev_joint_state.position.size() == joint_state.position.size()) {
                 for (unsigned int i = 0; i < joint_state.position.size(); i++) {
-                    joint_state.velocity.push_back((joint_state.position[i] - prev_joint_state.position[i]) / time_from_prev);
+                    joint_state.velocity.push_back((joint_state.position[i] - prev_joint_state.position[i]) /
+                                                   time_from_prev);
                 }
             } else {
                 joint_state.velocity.resize(joint_state.name.size());
@@ -512,7 +544,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
 #endif
         if (follow_joint_trajectory_server.isActive()) {
             follow_joint_trajectory_feedback.header.stamp = tm_on_execute;
-            if (!follow_joint_trajectory_feedback.joint_names.empty() && !follow_joint_trajectory_feedback.actual.positions.empty()) {
+            if (!follow_joint_trajectory_feedback.joint_names.empty() &&
+                !follow_joint_trajectory_feedback.actual.positions.empty()) {
                 follow_joint_trajectory_server.publishFeedback(follow_joint_trajectory_feedback);
             }
         }
@@ -521,8 +554,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         // diagnostics
         tm.tack();
         if (tm.interval() > 1) {
-            ROS_INFO_STREAM("[" << getInstanceName() << "] @onExecutece " << ec_id << " is working at " << count_read << "[Hz] (exec " << count_all
-                                << " Hz, dropped " << count_drop << ")");
+            ROS_INFO_STREAM("[" << getInstanceName() << "] @onExecutece " << ec_id << " is working at " << count_read
+                                << "[Hz] (exec " << count_all << " Hz, dropped " << count_drop << ")");
             tm.tick();
             count_read = 0;
             count_all  = 0;
@@ -531,8 +564,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         static ros::Time t0, t1;
         t1 = ros::Time(m_rsangle.tm.sec, m_rsangle.tm.nsec);
         if ((t1 - t0).toSec() < dt * 0.9 || dt * 1.1 < (t1 - t0).toSec()) {
-            ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecutece " << ec_id << " may drop communication. " << (t1 - t0).toSec() << "[sec] (" << dt
-                                 << ")");
+            ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecutece " << ec_id << " may drop communication. "
+                                 << (t1 - t0).toSec() << "[sec] (" << dt << ")");
             count_drop++;
         }
         t0 = t1;
@@ -541,7 +574,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         double interval = 5;
         tm.tack();
         if (tm.interval() > interval) {
-            ROS_WARN_STREAM("[" << getInstanceName() << "] @onExecutece " << ec_id << " is not executed last " << interval << "[sec]");
+            ROS_WARN_STREAM("[" << getInstanceName() << "] @onExecutece " << ec_id << " is not executed last "
+                                << interval << "[sec]");
             tm.tick();
         }
     } // end: m_in_rsangleIn
@@ -561,7 +595,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             for (unsigned int i = 0; i < body->numJoints(); i++) {
                 ROS_DEBUG_STREAM(body->joint(i)->name() << " - " << m_mcangle.data[i]);
                 joint_controller_state.desired.positions.push_back(m_mcangle.data[i]);
-                joint_controller_state.error.positions.push_back(joint_controller_state.actual.positions[i] - joint_controller_state.desired.positions[i]);
+                joint_controller_state.error.positions.push_back(joint_controller_state.actual.positions[i] -
+                                                                 joint_controller_state.desired.positions[i]);
             }
             /* set zero for all velocities and accelerations */
             joint_controller_state.desired.velocities.resize(joint_controller_state.joint_names.size());
@@ -573,7 +608,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
 
             joint_controller_state_pub.publish(joint_controller_state);
         }
-        if (!follow_joint_trajectory_feedback.joint_names.empty() && !follow_joint_trajectory_feedback.actual.positions.empty() && follow_action_initialized &&
+        if (!follow_joint_trajectory_feedback.joint_names.empty() &&
+            !follow_joint_trajectory_feedback.actual.positions.empty() && follow_action_initialized &&
             follow_joint_trajectory_server.isActive()) {
             follow_joint_trajectory_server.publishFeedback(follow_joint_trajectory_feedback);
         }
@@ -617,7 +653,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         if (m_rsforceIn[i]->isNew()) {
             try {
                 m_rsforceIn[i]->read();
-                ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_rsforceName[i] << " size = " << m_rsforce[i].data.length());
+                ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_rsforceName[i]
+                                     << " size = " << m_rsforce[i].data.length());
                 if (m_rsforce[i].data.length() >= 6) {
                     geometry_msgs::WrenchStamped fsensor;
                     if (use_hrpsys_time) {
@@ -641,7 +678,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         if (m_offforceIn[i]->isNew()) {
             try {
                 m_offforceIn[i]->read();
-                ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_offforceName[i] << " size = " << m_offforce[i].data.length());
+                ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_offforceName[i]
+                                     << " size = " << m_offforce[i].data.length());
                 if (m_offforce[i].data.length() >= 6) {
                     geometry_msgs::WrenchStamped fsensor;
                     if (use_hrpsys_time) {
@@ -667,7 +705,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         if (m_mcforceIn[i]->isNew()) {
             try {
                 m_mcforceIn[i]->read();
-                ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_mcforceName[i] << " size = " << m_mcforce[i].data.length());
+                ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute " << m_mcforceName[i]
+                                     << " size = " << m_mcforce[i].data.length());
                 if (m_mcforce[i].data.length() >= 6) {
                     geometry_msgs::WrenchStamped fsensor;
                     if (use_hrpsys_time) {
@@ -843,7 +882,8 @@ void HrpsysSeqStateROSBridge2::periodicTimerCallback(const ros::TimerEvent &even
     tf_transforms.clear();
 }
 
-void HrpsysSeqStateROSBridge2::updateOdometry(const cnoid::Vector3 &trans, const cnoid::Matrix3 &R, const ros::Time &stamp) {
+void HrpsysSeqStateROSBridge2::updateOdometry(const cnoid::Vector3 &trans, const cnoid::Matrix3 &R,
+                                              const ros::Time &stamp) {
     cnoid::Vector3 rpy = cnoid::rpyFromRot(R);
     tf::Quaternion q   = tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2));
     nav_msgs::Odometry odom;
@@ -874,7 +914,8 @@ void HrpsysSeqStateROSBridge2::updateOdometry(const cnoid::Vector3 &trans, const
             // omega_w is described in global coordinates in relationships of twist
             // transformation. omega in twist.angular is transformed into rootlink
             // coords because twist should be described in child_frame_id.
-            cnoid::Vector3 omega       = R.transpose() * cnoid::omegaFromRot(R * prev_R.transpose()) / dt; // omegaFromRot returns matrix_log
+            cnoid::Vector3 omega =
+                R.transpose() * cnoid::omegaFromRot(R * prev_R.transpose()) / dt; // omegaFromRot returns matrix_log
             odom.twist.twist.angular.x = omega[0];
             odom.twist.twist.angular.y = omega[1];
             odom.twist.twist.angular.z = omega[2];
@@ -915,9 +956,10 @@ void HrpsysSeqStateROSBridge2::updateOdometry(const cnoid::Vector3 &trans, const
             for (int i = 0; i < 6; i++) {
                 sigma2[i] = sigma[i] * sigma[i];
             }
-            Eigen::Matrix<double, 6, 6> twist_transformation = Eigen::Matrix<double, 6,
-                                                                             6>::Zero(); // matrix [[R, 0], [0, R]] to convert twist
-                                                                                         // from local to global
+            Eigen::Matrix<double, 6, 6> twist_transformation =
+                Eigen::Matrix<double, 6,
+                              6>::Zero(); // matrix [[R, 0], [0, R]] to convert twist
+                                          // from local to global
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
                     twist_transformation(i, j)         = R(i, j);
@@ -931,7 +973,9 @@ void HrpsysSeqStateROSBridge2::updateOdometry(const cnoid::Vector3 &trans, const
             // coordinates: x(t+dt) = f(x(t), v(t)), x is in world coordinates
             Eigen::Matrix<double, 6, 6> jacobi_velocity = Eigen::Matrix<double, 6, 6>::Identity() * dt;
             Eigen::Matrix<double, 6, 6> pose_cov =
-                prev_pose_cov + jacobi_velocity * (twist_transformation.transpose() * twist_cov * twist_transformation) * jacobi_velocity.transpose();
+                prev_pose_cov + jacobi_velocity *
+                                    (twist_transformation.transpose() * twist_cov * twist_transformation) *
+                                    jacobi_velocity.transpose();
             // insert covariance
             for (int i = 0; i < 6; i++) {     // index in col
                 for (int j = 0; j < 6; j++) { // index in raw
@@ -1046,8 +1090,8 @@ void HrpsysSeqStateROSBridge2::updateImu(tf::Transform &base, bool is_base_valid
                 }
             } else {
                 ROS_ERROR_STREAM("[" << getInstanceName() << "] "
-                                     << "nan value detected in imu_floor! (input: r,p,y=" << m_baseRpy.data.r << "," << m_baseRpy.data.p << ","
-                                     << m_baseRpy.data.y << ")");
+                                     << "nan value detected in imu_floor! (input: r,p,y=" << m_baseRpy.data.r << ","
+                                     << m_baseRpy.data.p << "," << m_baseRpy.data.y << ")");
             }
         }
     }
@@ -1064,12 +1108,16 @@ void HrpsysSeqStateROSBridge2::updateSensorTransform(const ros::Time &stamp) {
             geometry_msgs::TransformStamped ros_sensor_coords;
             tf::StampedTransform stamped_sensor_transform;
             if (sensor_transformations.find((*its).first) == sensor_transformations.end()) {
-                stamped_sensor_transform = tf::StampedTransform((*its).second.transform, stamp, std::string((*its).second.link_name), (*its).first);
+                stamped_sensor_transform = tf::StampedTransform((*its).second.transform, stamp,
+                                                                std::string((*its).second.link_name), (*its).first);
             } else {
                 geometry_msgs::Transform transform = sensor_transformations[(*its).first];
-                tf::Transform tf_transform(tf::Quaternion(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w),
-                                           tf::Vector3(transform.translation.x, transform.translation.y, transform.translation.z));
-                stamped_sensor_transform = tf::StampedTransform(tf_transform, stamp, std::string((*its).second.link_name), (*its).first);
+                tf::Transform tf_transform(
+                    tf::Quaternion(transform.rotation.x, transform.rotation.y, transform.rotation.z,
+                                   transform.rotation.w),
+                    tf::Vector3(transform.translation.x, transform.translation.y, transform.translation.z));
+                stamped_sensor_transform =
+                    tf::StampedTransform(tf_transform, stamp, std::string((*its).second.link_name), (*its).first);
             }
             tf::transformStampedTFToMsg(stamped_sensor_transform, ros_sensor_coords);
             sensor_tf_buffer.push_back(ros_sensor_coords);
@@ -1085,7 +1133,7 @@ void HrpsysSeqStateROSBridge2::updateSensorTransform(const ros::Time &stamp) {
 
 extern "C" {
 void HrpsysSeqStateROSBridge2Init(RTC::Manager *manager) {
-    coil::Properties profile(hrpsysseqstaterosbridge2_spec);
+    RTC::Properties profile(hrpsysseqstaterosbridge2_spec);
     manager->registerFactory(profile, RTC::Create<HrpsysSeqStateROSBridge2>, RTC::Delete<HrpsysSeqStateROSBridge2>);
 }
 };

@@ -90,7 +90,8 @@ RTC::ReturnCode_t HrpsysJointTrajectoryBridge2::onActivated(RTC::UniqueId ec_id)
                         }
                         ROS_INFO_STREAM("ADD_GROUP: " << gname << " (" << cname << ")");
                         ROS_INFO_STREAM("    JOINT:" << ss.str());
-                        jointTrajectoryActionObj::Ptr tmp = std::make_shared<jointTrajectoryActionObj>(this, cval, gval, jlst);
+                        jointTrajectoryActionObj::Ptr tmp =
+                            std::make_shared<jointTrajectoryActionObj>(this, cval, gval, jlst);
                         trajectory_actions.push_back(tmp);
                     }
                 }
@@ -123,7 +124,8 @@ RTC::ReturnCode_t HrpsysJointTrajectoryBridge2::onExecute(RTC::UniqueId ec_id) {
     return RTC::RTC_OK;
 }
 
-HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::jointTrajectoryActionObj(HrpsysJointTrajectoryBridge2 *ptr, std::string &cname, std::string &gname,
+HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::jointTrajectoryActionObj(HrpsysJointTrajectoryBridge2 *ptr,
+                                                                                 std::string &cname, std::string &gname,
                                                                                  std::vector<std::string> &jlist) {
     parent          = ptr;
     controller_name = cname;
@@ -131,18 +133,21 @@ HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::jointTrajectoryActionObj
     joint_list      = jlist;
 
 #ifdef USE_PR2_CONTROLLERS_MSGS
-    joint_trajectory_server.reset(
-        new actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction>(parent->nh, controller_name + "/joint_trajectory_action", false));
+    joint_trajectory_server.reset(new actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction>(
+        parent->nh, controller_name + "/joint_trajectory_action", false));
 #endif
-    follow_joint_trajectory_server.reset(
-        new actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction>(parent->nh, controller_name + "/follow_joint_trajectory_action", false));
+    follow_joint_trajectory_server.reset(new actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction>(
+        parent->nh, controller_name + "/follow_joint_trajectory_action", false));
     trajectory_command_sub =
-        parent->nh.subscribe(controller_name + "/command", 1, &HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onTrajectoryCommandCB, this);
+        parent->nh.subscribe(controller_name + "/command", 1,
+                             &HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onTrajectoryCommandCB, this);
 
 
 #ifdef USE_PR2_CONTROLLERS_MSGS
-    joint_trajectory_server->registerGoalCallback(std::bind(&HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectoryActionGoal, this));
-    joint_trajectory_server->registerPreemptCallback(std::bind(&HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectoryActionPreempt, this));
+    joint_trajectory_server->registerGoalCallback(
+        std::bind(&HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectoryActionGoal, this));
+    joint_trajectory_server->registerPreemptCallback(
+        std::bind(&HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectoryActionPreempt, this));
 #endif
     follow_joint_trajectory_server->registerGoalCallback(
         std::bind(&HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onFollowJointTrajectoryActionGoal, this));
@@ -150,13 +155,15 @@ HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::jointTrajectoryActionObj
         std::bind(&HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onFollowJointTrajectoryActionPreempt, this));
 
 #ifdef USE_PR2_CONTROLLERS_MSGS
-    joint_controller_state_pub = parent->nh.advertise<pr2_controllers_msgs::JointTrajectoryControllerState>(controller_name + "/state", 1);
+    joint_controller_state_pub =
+        parent->nh.advertise<pr2_controllers_msgs::JointTrajectoryControllerState>(controller_name + "/state", 1);
 #else
-    joint_controller_state_pub = parent->nh.advertise<control_msgs::JointTrajectoryControllerState>(controller_name + "/state", 1);
+    joint_controller_state_pub =
+        parent->nh.advertise<control_msgs::JointTrajectoryControllerState>(controller_name + "/state", 1);
 #endif
 
     if (groupname.length() > 0) {
-        OpenHRP::SequencePlayer2Service::StrSequence jnames;
+        sequence_player::SequencePlayer2Service::StrSequence jnames;
         jnames.length(joint_list.size());
         for (size_t i = 0; i < joint_list.size(); i++) {
             jnames[i] = joint_list[i].c_str();
@@ -164,10 +171,12 @@ HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::jointTrajectoryActionObj
         try {
             parent->m_service0->addJointGroup(groupname.c_str(), jnames);
         } catch (CORBA::SystemException &ex) {
-            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), CORBA::SystemException " << ex._name() << std::endl;
+            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), CORBA::SystemException "
+                      << ex._name() << std::endl;
             sleep(1);
         } catch (...) {
-            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), failed to addJointGroup[" << groupname.c_str() << "]" << std::endl;
+            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), failed to addJointGroup["
+                      << groupname.c_str() << "]" << std::endl;
             ;
             sleep(1);
         }
@@ -270,7 +279,7 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::restart() {
     parent->m_service0->removeJointGroup(groupname.c_str());
     usleep(100000);
     if (groupname.length() > 0) {
-        OpenHRP::SequencePlayer2Service::StrSequence jnames;
+        sequence_player::SequencePlayer2Service::StrSequence jnames;
         jnames.length(joint_list.size());
         for (size_t i = 0; i < joint_list.size(); i++) {
             jnames[i] = joint_list[i].c_str();
@@ -278,23 +287,26 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::restart() {
         try {
             parent->m_service0->addJointGroup(groupname.c_str(), jnames);
         } catch (CORBA::SystemException &ex) {
-            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), CORBA::SystemException " << ex._name() << std::endl;
+            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), CORBA::SystemException "
+                      << ex._name() << std::endl;
             sleep(1);
         } catch (...) {
-            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), failed to addJointGroup[" << groupname.c_str() << "]" << std::endl;
+            std::cerr << "[HrpsysJointTrajectoryBridge] addJointGroup(" << groupname << "), failed to addJointGroup["
+                      << groupname.c_str() << "]" << std::endl;
             ;
         }
     }
 }
 
-void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectory(trajectory_msgs::JointTrajectory trajectory) {
+void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectory(
+    trajectory_msgs::JointTrajectory trajectory) {
     parent->m_mutex.lock();
 
     ROS_INFO_STREAM("[" << parent->getInstanceName() << "] @onJointTrajectoryAction (" << this->groupname << ")");
     // TODO: check size and joint names
 
-    OpenHRP::dSequenceSequence angles;
-    OpenHRP::dSequence duration;
+    sequence_player::dSequenceSequence angles;
+    sequence_player::dSequence duration;
 
     angles.length(trajectory.points.size());
     duration.length(trajectory.points.size());
@@ -302,7 +314,8 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectory(t
     std::vector<std::string> joint_names = trajectory.joint_names;
     if (joint_names.size() < joint_list.size()) {
         ROS_ERROR_STREAM("[" << parent->getInstanceName() << "] @onJointTrajectoryAction / Error : "
-                             << "required joint_names.size() = " << joint_names.size() << " < joint_list.size() = " << joint_list.size());
+                             << "required joint_names.size() = " << joint_names.size()
+                             << " < joint_list.size() = " << joint_list.size());
         parent->m_mutex.unlock();
         return;
     }
@@ -315,8 +328,8 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectory(t
         }
     }
 
-    ROS_INFO_STREAM("[" << parent->getInstanceName() << "] @onJointTrajectoryAction (" << this->groupname << ") : trajectory.points.size() "
-                        << trajectory.points.size());
+    ROS_INFO_STREAM("[" << parent->getInstanceName() << "] @onJointTrajectoryAction (" << this->groupname
+                        << ") : trajectory.points.size() " << trajectory.points.size());
     for (unsigned int i = 0; i < trajectory.points.size(); i++) {
         angles[i].length(joint_names.size());
 
@@ -326,8 +339,9 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectory(t
             if (l)
                 l->q() = point.positions[j];
             else
-                ROS_WARN_STREAM_ONCE("[" << parent->getInstanceName() << "] @onJointTrajectoryAction (" << this->groupname << ") : joint named "
-                                         << joint_names[j] << " is not found. Skipping ...");
+                ROS_WARN_STREAM_ONCE("[" << parent->getInstanceName() << "] @onJointTrajectoryAction ("
+                                         << this->groupname << ") : joint named " << joint_names[j]
+                                         << " is not found. Skipping ...");
         }
 
         parent->body->calcForwardKinematics();
@@ -337,13 +351,16 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectory(t
             angles[i][j] = parent->body->link(joint_list[j])->q();
             ss << " " << point.positions[j];
         }
-        ROS_INFO_STREAM("[" << parent->getInstanceName() << "] i:" << i << " : time_from_start " << trajectory.points[i].time_from_start.toSec());
+        ROS_INFO_STREAM("[" << parent->getInstanceName() << "] i:" << i << " : time_from_start "
+                            << trajectory.points[i].time_from_start.toSec());
 
         if (i > 0) {
-            duration[i] = trajectory.points[i].time_from_start.toSec() - trajectory.points[i - 1].time_from_start.toSec();
+            duration[i] =
+                trajectory.points[i].time_from_start.toSec() - trajectory.points[i - 1].time_from_start.toSec();
         } else { // if i == 0
             duration[i] = trajectory.points[i].time_from_start.toSec();
-            if (std::abs(duration[i]) < 0.001) duration[i] = 0.001; // set magic delta ... https://github.com/start-jsk/rtmros_common/issues/1036
+            if (std::abs(duration[i]) < 0.001)
+                duration[i] = 0.001; // set magic delta ... https://github.com/start-jsk/rtmros_common/issues/1036
         }
         ROS_INFO_STREAM("[" << parent->getInstanceName() << "] [" << ss.str() << "] " << duration[i]);
     }
@@ -389,7 +406,8 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onFollowJointTrajec
 void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onJointTrajectoryActionPreempt() {
     ROS_INFO_STREAM("[" << parent->getInstanceName() << "] @onJointTrajectoryActionPreempt()");
     joint_trajectory_server->setPreempted();
-    if (!joint_trajectory_server->isNewGoalAvailable()) { // Cancel request comes from client, so motion should be stopped immediately,
+    if (!joint_trajectory_server
+             ->isNewGoalAvailable()) { // Cancel request comes from client, so motion should be stopped immediately,
         // while motion should be changed smoothly when new goal comes
         if (groupname.length() > 0) { // group
             ROS_INFO_STREAM("[" << parent->getInstanceName() << "] clearJointAnglesOfGroup: " << groupname);
@@ -406,7 +424,8 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onFollowJointTrajec
     ROS_INFO_STREAM("[" << parent->getInstanceName() << "] @onFollowJointTrajectoryActionPreempt()");
     follow_joint_trajectory_server->setPreempted();
 
-    if (!follow_joint_trajectory_server->isNewGoalAvailable()) { // Cancel request comes from client, so motion should be stopped immediately,
+    if (!follow_joint_trajectory_server
+             ->isNewGoalAvailable()) { // Cancel request comes from client, so motion should be stopped immediately,
         // while motion should be changed smoothly when new goal comes
         if (groupname.length() > 0) { // group
             ROS_INFO_STREAM("[" << parent->getInstanceName() << "] clearJointAnglesOfGroup: " << groupname);
@@ -418,7 +437,8 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onFollowJointTrajec
     }
 }
 
-void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onTrajectoryCommandCB(const trajectory_msgs::JointTrajectoryConstPtr &msg) {
+void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onTrajectoryCommandCB(
+    const trajectory_msgs::JointTrajectoryConstPtr &msg) {
     ROS_INFO_STREAM("[" << parent->getInstanceName() << "] @onTrajectoryCommandCB()");
     onJointTrajectory(*msg);
 }
@@ -426,7 +446,8 @@ void HrpsysJointTrajectoryBridge2::jointTrajectoryActionObj::onTrajectoryCommand
 extern "C" {
 
 void HrpsysJointTrajectoryBridge2Init(RTC::Manager *manager) {
-    coil::Properties profile(hrpsysjointtrajectorybridge2_spec);
-    manager->registerFactory(profile, RTC::Create<HrpsysJointTrajectoryBridge2>, RTC::Delete<HrpsysJointTrajectoryBridge2>);
+    RTC::Properties profile(hrpsysjointtrajectorybridge2_spec);
+    manager->registerFactory(profile, RTC::Create<HrpsysJointTrajectoryBridge2>,
+                             RTC::Delete<HrpsysJointTrajectoryBridge2>);
 }
 };

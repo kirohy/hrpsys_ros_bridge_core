@@ -27,7 +27,8 @@
 #include <sequence_player/idl/SequencePlayer2ServiceStub.h>
 
 #define RTC_INFO_STREAM(var) std::cout << "[" << m_profile.instance_name << "] " << var << std::endl;
-#define RTC_WARN_STREAM(var) std::cerr << "\x1b[31m[" << m_profile.instance_name << "] " << var << "\x1b[39m" << std::endl;
+#define RTC_WARN_STREAM(var)                                                                                           \
+    std::cerr << "\x1b[31m[" << m_profile.instance_name << "] " << var << "\x1b[39m" << std::endl;
 
 class HrpsysSeqStateROSBridge2Impl : public RTC::DataFlowComponentBase {
   public:
@@ -95,7 +96,7 @@ class HrpsysSeqStateROSBridge2Impl : public RTC::DataFlowComponentBase {
     RTC::OutPort<RTC::TimedDoubleSeq> m_mctorqueOut;
 
     RTC::CorbaPort m_SequencePlayerServicePort;
-    RTC::CorbaConsumer<OpenHRP::SequencePlayer2Service> m_service0;
+    RTC::CorbaConsumer<sequence_player::SequencePlayer2Service> m_service0;
 
   protected:
     cnoid::BodyPtr body;

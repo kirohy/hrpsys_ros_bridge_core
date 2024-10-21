@@ -6,7 +6,7 @@ AllowShortBlocksOnASingleLine: true
 AllowShortEnumsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: true
-ColumnLimit: 160
+ColumnLimit: 120
 IndentWidth: 4
 UseTab: Never
 MaxEmptyLinesToKeep: 2

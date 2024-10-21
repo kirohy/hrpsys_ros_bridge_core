@@ -47,9 +47,11 @@ class HrpsysJointTrajectoryBridge2 : public RTC::DataFlowComponentBase {
         ros::Publisher joint_controller_state_pub;
 
 #ifdef USE_PR2_CONTROLLERS_MSGS
-        boost::shared_ptr<actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction>> joint_trajectory_server;
+        boost::shared_ptr<actionlib::SimpleActionServer<pr2_controllers_msgs::JointTrajectoryAction>>
+            joint_trajectory_server;
 #endif
-        std::shared_ptr<actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction>> follow_joint_trajectory_server;
+        std::shared_ptr<actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction>>
+            follow_joint_trajectory_server;
         ros::Subscriber trajectory_command_sub;
 
         std::string controller_name;
@@ -60,7 +62,8 @@ class HrpsysJointTrajectoryBridge2 : public RTC::DataFlowComponentBase {
 
       public:
         typedef std::shared_ptr<jointTrajectoryActionObj> Ptr;
-        jointTrajectoryActionObj(HrpsysJointTrajectoryBridge2 *ptr, std::string &cname, std::string &gname, std::vector<std::string> &jlist);
+        jointTrajectoryActionObj(HrpsysJointTrajectoryBridge2 *ptr, std::string &cname, std::string &gname,
+                                 std::vector<std::string> &jlist);
         ~jointTrajectoryActionObj();
 
         void onJointTrajectory(trajectory_msgs::JointTrajectory trajectory);
@@ -78,7 +81,7 @@ class HrpsysJointTrajectoryBridge2 : public RTC::DataFlowComponentBase {
 
   protected:
     RTC::CorbaPort m_SequencePlayerServicePort;
-    RTC::CorbaConsumer<OpenHRP::SequencePlayer2Service> m_service0;
+    RTC::CorbaConsumer<sequence_player::SequencePlayer2Service> m_service0;
 
 
   protected:

@@ -7,14 +7,14 @@
 
 #include <actionlib/server/simple_action_server.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
+#include <dynamic_reconfigure/Reconfigure.h>
 #include <geometry_msgs/WrenchStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 #include <rosgraph_msgs/Clock.h>
+#include <sensor_msgs/Imu.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Int32.h>
-#include <dynamic_reconfigure/Reconfigure.h>
-#include <sensor_msgs/Imu.h>
 
 #ifdef USE_PR2_CONTROLLERS_MSGS
 #include <pr2_controllers_msgs/JointTrajectoryAction.h>
@@ -49,12 +49,13 @@ class HrpsysSeqStateROSBridge2 : public HrpsysSeqStateROSBridge2Impl {
     void onFollowJointTrajectoryActionPreempt();
     void onTrajectoryCommandCB(const trajectory_msgs::JointTrajectoryConstPtr &msg);
     bool sendMsg(dynamic_reconfigure::Reconfigure::Request &req, dynamic_reconfigure::Reconfigure::Response &res);
-    bool setSensorTransformation(seq_state_ros_bridge::SetSensorTransformation::Request &req, seq_state_ros_bridge::SetSensorTransformation::Response &res);
+    bool setSensorTransformation(seq_state_ros_bridge::SetSensorTransformation::Request &req,
+                                 seq_state_ros_bridge::SetSensorTransformation::Response &res);
 
   private:
     ros::NodeHandle nh;
-    ros::Publisher joint_state_pub, joint_controller_state_pub, mot_states_pub, diagnostics_pub, clock_pub, zmp_pub, ref_cp_pub, act_cp_pub, odom_pub, imu_pub,
-        em_mode_pub, ref_contact_states_pub, act_contact_states_pub;
+    ros::Publisher joint_state_pub, joint_controller_state_pub, mot_states_pub, diagnostics_pub, clock_pub, zmp_pub,
+        ref_cp_pub, act_cp_pub, odom_pub, imu_pub, em_mode_pub, ref_contact_states_pub, act_contact_states_pub;
     ros::Subscriber trajectory_command_sub;
     std::vector<ros::Publisher> fsensor_pub, cop_pub;
 #ifdef USE_PR2_CONTROLLERS_MSGS
