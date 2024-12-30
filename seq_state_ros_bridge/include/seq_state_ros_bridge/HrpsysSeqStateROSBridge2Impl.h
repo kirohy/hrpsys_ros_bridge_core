@@ -23,7 +23,7 @@
 #include <memory>
 #include <tf/transform_broadcaster.h>
 
-#include <hrpsys/idl/HRPDataTypes.hh>
+#include <robot_hardware/idl/RobotHardware2Service.hh>
 #include <sequence_player/idl/SequencePlayer2ServiceStub.h>
 
 #define RTC_INFO_STREAM(var) std::cout << "[" << m_profile.instance_name << "] " << var << std::endl;
@@ -75,8 +75,8 @@ class HrpsysSeqStateROSBridge2Impl : public RTC::DataFlowComponentBase {
     RTC::InPort<RTC::TimedDoubleSeq> m_rsvelIn;
     RTC::TimedDoubleSeq m_rstorque;
     RTC::InPort<RTC::TimedDoubleSeq> m_rstorqueIn;
-    OpenHRP::TimedLongSeqSeq m_servoState;
-    RTC::InPort<OpenHRP::TimedLongSeqSeq> m_servoStateIn;
+    robot_hardware::TimedLongSeqSeq m_servoState;
+    RTC::InPort<robot_hardware::TimedLongSeqSeq> m_servoStateIn;
     RTC::TimedPoint3D m_rszmp;
     RTC::InPort<RTC::TimedPoint3D> m_rszmpIn;
     RTC::TimedPoint3D m_rsrefCP;

@@ -23,8 +23,8 @@
 #include <control_msgs/JointTrajectoryControllerState.h>
 #endif
 
-#include <seq_state_ros_bridge/ContactStatesStamped.h>
-#include <seq_state_ros_bridge/MotorStates.h>
+#include <jaxon_ros_interface/ContactStatesStamped.h>
+#include <jaxon_ros_interface/MotorStates.h>
 #include <seq_state_ros_bridge/SetSensorTransformation.h>
 
 #include <mutex>

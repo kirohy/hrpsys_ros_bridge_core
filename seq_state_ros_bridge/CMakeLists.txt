@@ -26,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   sequence_player
   robot_hardware
+  jaxon_ros_interface
   ${PR2_CONTROLLERS_MSGS_PACKAGE})
 
 find_package(choreonoid REQUIRED)
@@ -33,17 +34,6 @@ find_package(choreonoid REQUIRED)
 find_package(PkgConfig)
 pkg_check_modules(openrtm_aist openrtm-aist REQUIRED)
 
-find_package(hrpsys QUIET)
-if(NOT ${hrpsys_FOUND})
-  pkg_check_modules(hrpsys hrpsys-base REQUIRED)
-endif()
-
-add_message_files(FILES
-  MotorStates.msg
-  ContactState.msg
-  ContactStateStamped.msg
-  ContactStatesStamped.msg
-)
 add_service_files(FILES
   SetSensorTransformation.srv
 )
@@ -64,7 +54,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${CHOREONOID_INCLUDE_DIRS}
   ${openrtm_aist_INCLUDE_DIRS}
-  ${hrpsys_INCLUDE_DIRS}
 )
 
 link_directories(
@@ -85,7 +74,6 @@ target_link_libraries(HrpsysSeqStateROSBridge2
   ${catkin_LIBRARIES}
   ${CHOREONOID_BODY_LIBRARIES}
   ${openrtm_aist_LIBRARIES}
-  HRPDataTypesSkel HRPDataTypesStub
 )
 
 install(TARGETS HrpsysSeqStateROSBridge2

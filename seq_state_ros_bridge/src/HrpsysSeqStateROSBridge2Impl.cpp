@@ -1,11 +1,21 @@
 #include <seq_state_ros_bridge/HrpsysSeqStateROSBridge2Impl.h>
 
+// clang-format off
 static const char *hrpsysseqstaterosbridge2impl_spec[] = {
-    "implementation_id", "HrpsysSeqStateROSBridge2Impl", "type_name", "HrpsysSeqStateROSBridge2Impl", "description",
-    "hrpsys seq state - ros bridge", "version", "1.0", "vendor", "JSK", "category", "example", "activity_type",
-    "SPORADIC", "kind", "DataFlowComponent", "max_instance", "10", "language", "C++", "lang_type", "compile",
+    "implementation_id", "HrpsysSeqStateROSBridge2Impl",
+    "type_name",         "HrpsysSeqStateROSBridge2Impl",
+    "description",       "hrpsys seq state - ros bridge",
+    "version",           "1.0",
+    "vendor",            "JSK",
+    "category",          "example",
+    "activity_type",     "SPORADIC",
+    "kind",              "DataFlowComponent",
+    "max_instance",      "10",
+    "language",          "C++",
+    "lang_type",         "compile",
     // Configuration variables
     ""};
+// clang-format on
 
 HrpsysSeqStateROSBridge2Impl::HrpsysSeqStateROSBridge2Impl(RTC::Manager *manager)
     : RTC::DataFlowComponentBase(manager), m_rsangleIn("rsangle", m_rsangle), m_mcangleIn("mcangle", m_mcangle),

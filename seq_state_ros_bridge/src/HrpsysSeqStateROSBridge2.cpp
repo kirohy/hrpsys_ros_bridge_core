@@ -2,29 +2,21 @@
 #include <rtm/idl/RTC.hh>
 #include <seq_state_ros_bridge/HrpsysSeqStateROSBridge2.h>
 
-static const char *hrpsysseqstaterosbridge2_spec[] = {"implementation_id",
-                                                      "HrpsysSeqStateROSBridge2",
-                                                      "type_name",
-                                                      "HrpsysSeqStateROSBridge2",
-                                                      "description",
-                                                      "hrpsys seq state - ros bridge",
-                                                      "version",
-                                                      "1.0",
-                                                      "vendor",
-                                                      "JSK",
-                                                      "category",
-                                                      "example",
-                                                      "activity_type",
-                                                      "SPORADIC",
-                                                      "kind",
-                                                      "DataFlowComponent",
-                                                      "max_instance",
-                                                      "10",
-                                                      "language",
-                                                      "C++",
-                                                      "lang_type",
-                                                      "compile",
-                                                      ""};
+// clang-format off
+static const char *hrpsysseqstaterosbridge2_spec[] = {
+    "implementation_id", "HrpsysSeqStateROSBridge2",
+    "type_name",         "HrpsysSeqStateROSBridge2",
+    "description",       "hrpsys seq state - ros bridge",
+    "version",           "1.0",
+    "vendor",            "JSK",
+    "category",          "example",
+    "activity_type",     "SPORADIC",
+    "kind",              "DataFlowComponent",
+    "max_instance",      "10",
+    "language",          "C++",
+    "lang_type",         "compile",
+    ""};
+// clang-format on
 
 HrpsysSeqStateROSBridge2::HrpsysSeqStateROSBridge2(RTC::Manager *manager)
     : use_sim_time(false), use_hrpsys_time(false),
@@ -66,7 +58,7 @@ HrpsysSeqStateROSBridge2::HrpsysSeqStateROSBridge2(RTC::Manager *manager)
 #endif
     trajectory_command_sub =
         nh.subscribe("/fullbody_controller/command", 1, &HrpsysSeqStateROSBridge2::onTrajectoryCommandCB, this);
-    mot_states_pub = nh.advertise<seq_state_ros_bridge::MotorStates>("/motor_states", 1);
+    mot_states_pub = nh.advertise<jaxon_ros_interface::MotorStates>("/motor_states", 1);
     odom_pub       = nh.advertise<nav_msgs::Odometry>("/odom", 1);
     imu_pub        = nh.advertise<sensor_msgs::Imu>("/imu", 1);
 
@@ -155,8 +147,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onInitialize() {
     zmp_pub                = nh.advertise<geometry_msgs::PointStamped>("/zmp", 10);
     ref_cp_pub             = nh.advertise<geometry_msgs::PointStamped>("/ref_capture_point", 10);
     act_cp_pub             = nh.advertise<geometry_msgs::PointStamped>("/act_capture_point", 10);
-    ref_contact_states_pub = nh.advertise<seq_state_ros_bridge::ContactStatesStamped>("/ref_contact_states", 10);
-    act_contact_states_pub = nh.advertise<seq_state_ros_bridge::ContactStatesStamped>("/act_contact_states", 10);
+    ref_contact_states_pub = nh.advertise<jaxon_ros_interface::ContactStatesStamped>("/ref_contact_states", 10);
+    act_contact_states_pub = nh.advertise<jaxon_ros_interface::ContactStatesStamped>("/act_contact_states", 10);
     cop_pub.resize(m_mcforceName.size());
     for (unsigned int i = 0; i < m_mcforceName.size(); i++) {
         std::string tmpname(m_mcforceName[i]); // "ref_xx"
@@ -314,7 +306,7 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
     control_msgs::FollowJointTrajectoryFeedback follow_joint_trajectory_feedback;
     follow_joint_trajectory_feedback.header.stamp = tm_on_execute;
 
-    seq_state_ros_bridge::MotorStates mot_states;
+    jaxon_ros_interface::MotorStates mot_states;
     mot_states.header.stamp = tm_on_execute;
 
     static int count_all  = 0;
@@ -784,7 +776,7 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
         try {
             m_refContactStatesIn.read();
             m_controlSwingSupportTimeIn.read();
-            seq_state_ros_bridge::ContactStatesStamped refCSs;
+            jaxon_ros_interface::ContactStatesStamped refCSs;
             if (use_hrpsys_time) {
                 refCSs.header.stamp = ros::Time(m_refContactStates.tm.sec, m_refContactStates.tm.nsec);
             } else {
@@ -793,7 +785,7 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             int limb_size = m_refContactStates.data.length();
             refCSs.states.resize(limb_size);
             for (unsigned int i = 0; i < limb_size; i++) {
-                seq_state_ros_bridge::ContactState s;
+                jaxon_ros_interface::ContactState s;
                 if (m_refContactStates.data[i]) {
                     s.state = s.ON;
                 } else {
@@ -811,7 +803,7 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
     if (m_actContactStatesIn.isNew()) {
         try {
             m_actContactStatesIn.read();
-            seq_state_ros_bridge::ContactStatesStamped actCSs;
+            jaxon_ros_interface::ContactStatesStamped actCSs;
             if (use_hrpsys_time) {
                 actCSs.header.stamp = ros::Time(m_actContactStates.tm.sec, m_actContactStates.tm.nsec);
             } else {
@@ -820,7 +812,7 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             int limb_size = m_actContactStates.data.length();
             actCSs.states.resize(limb_size);
             for (unsigned int i = 0; i < limb_size; i++) {
-                seq_state_ros_bridge::ContactState s;
+                jaxon_ros_interface::ContactState s;
                 if (m_actContactStates.data[i]) {
                     s.state = s.ON;
                 } else {

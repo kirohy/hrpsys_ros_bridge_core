@@ -11,7 +11,6 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <depend>roscpp</depend>
-  <depend>hrpsys</depend>
   <depend>actionlib</depend>
   <depend>control_msgs</depend>
   <depend>geometry_msgs</depend>
@@ -25,4 +24,5 @@
   <depend>choreonoid</depend>
   <depend>sequence_player</depend>
   <depend>robot_hardware</depend>
+  <depend>jaxon_ros_interface</depend>
 </package>

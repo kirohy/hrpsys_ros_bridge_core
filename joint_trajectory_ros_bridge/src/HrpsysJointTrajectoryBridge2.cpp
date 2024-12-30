@@ -1,29 +1,21 @@
 #include <joint_trajectory_ros_bridge/HrpsysJointTrajectoryBridge2.h>
 #include <rtm/idl/RTC.hh>
 
-static const char *hrpsysjointtrajectorybridge2_spec[] = {"implementation_id",
-                                                          "HrpsysJointTrajectoryBridge2",
-                                                          "type_name",
-                                                          "HrpsysJointTrajectoryBridge2",
-                                                          "description",
-                                                          "hrpsys setJointAngle - ros joint trajectory bridge",
-                                                          "version",
-                                                          "1.0",
-                                                          "vendor",
-                                                          "JSK",
-                                                          "category",
-                                                          "example",
-                                                          "activity_type",
-                                                          "SPORADIC",
-                                                          "kind",
-                                                          "DataFlowComponent",
-                                                          "max_instance",
-                                                          "10",
-                                                          "language",
-                                                          "C++",
-                                                          "lang_type",
-                                                          "compile",
-                                                          ""};
+// clang-format off
+static const char *hrpsysjointtrajectorybridge2_spec[] = {
+    "implementation_id", "HrpsysJointTrajectoryBridge2",
+    "type_name",         "HrpsysJointTrajectoryBridge2",
+    "description",       "hrpsys setJointAngle - ros joint trajectory bridge",
+    "version",           "1.0",
+    "vendor",            "JSK",
+    "category",          "example",
+    "activity_type",     "SPORADIC",
+    "kind",              "DataFlowComponent",
+    "max_instance",      "10",
+    "language",          "C++",
+    "lang_type",         "compile",
+    ""};
+// clang-format on
 
 HrpsysJointTrajectoryBridge2::HrpsysJointTrajectoryBridge2(RTC::Manager *manager)
     : RTC::DataFlowComponentBase(manager), m_SequencePlayerServicePort("SequencePlayer2Service") {}
