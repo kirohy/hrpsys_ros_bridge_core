@@ -128,7 +128,8 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        si.link_name           = s->link()->name();
+        std::string joint_name = s->link()->name();
+        si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
     }
