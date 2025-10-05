@@ -49,6 +49,7 @@ HrpsysSeqStateROSBridge2::HrpsysSeqStateROSBridge2(RTC::Manager *manager)
     set_sensor_transformation_srv =
         nh.advertiseService("set_sensor_transformation", &HrpsysSeqStateROSBridge2::setSensorTransformation, this);
     joint_state_pub = nh.advertise<sensor_msgs::JointState>("joint_states", 1);
+    ref_joint_state_pub = nh.advertise<sensor_msgs::JointState>("ref_joint_states", 1);
 #ifdef USE_PR2_CONTROLLERS_MSGS
     joint_controller_state_pub =
         nh.advertise<pr2_controllers_msgs::JointTrajectoryControllerState>("/fullbody_controller/state", 1);
@@ -571,6 +572,100 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2::onExecute(RTC::UniqueId ec_id) {
             tm.tick();
         }
     } // end: m_in_rsangleIn
+
+    // tauRefIn
+    if (m_tauRefIn.isNew()) {
+        try {
+            m_tauRefIn.read();
+            // for ( unsigned int i = 0; i < m_tauRef.data.length() ; i++ )
+            // std::cerr << m_rstorque.data[i] << " "; std::cerr << std::endl;
+
+        } catch (const std::runtime_error &e) {
+            ROS_ERROR_STREAM("[" << getInstanceName() << "] m_tauRefIn failed with " << e.what());
+        }
+    } // end: tauRefIn
+
+    // dqRefIn
+    if (m_dqRefIn.isNew()) {
+        try {
+            m_dqRefIn.read();
+            // for ( unsigned int i = 0; i < m_dqRef.data.length() ; i++ )
+            // std::cerr << m_dqRef.data[i] << " "; std::cerr << std::endl;
+        } catch (const std::runtime_error &e) {
+            ROS_ERROR_STREAM("[" << getInstanceName() << "] m_dqRefIn failed with " << e.what());
+        }
+    } // end: dqRefIn
+
+    // qRefIn
+    if (m_qRefIn.isNew()) {
+        ROS_DEBUG_STREAM("[" << getInstanceName() << "] @onExecute ec_id : " << ec_id << ", qRef:" << m_qRefIn.isNew());
+        try {
+            m_qRefIn.read();
+            // for ( unsigned int i = 0; i < m_qRef.data.length() ; i++ ) std::cerr
+            // << m_qRef.data[i] << " "; std::cerr << std::endl;
+        } catch (const std::runtime_error &e) {
+            ROS_ERROR_STREAM("[" << getInstanceName() << "] m_qRefIn failed with " << e.what());
+        }
+        //
+        sensor_msgs::JointState ref_joint_state;
+        if (use_hrpsys_time) {
+            // convert openrtm time to ros time
+            ref_joint_state.header.stamp = ros::Time(m_qRef.tm.sec, m_qRef.tm.nsec);
+        } else {
+            ref_joint_state.header.stamp = tm_on_execute;
+        }
+        //
+
+        m_mutex.lock();
+        if (m_qRef.data.length() < body->numJoints()) {
+            ROS_ERROR_STREAM("qRef.data.length(" << m_qRef.data.length() << ") is not equal to body->numJoints("
+                                                    << body->numJoints() << ")");
+            m_mutex.unlock();
+            return RTC::RTC_OK;
+        } else if (m_qRef.data.length() != body->numJoints()) {
+            ROS_INFO_STREAM("qRef.data.length(" << m_qRef.data.length() << ") is not equal to body->numJoints("
+                                                   << body->numJoints() << ")");
+        }
+        ROS_DEBUG_STREAM(std::endl);
+
+        for (int i = 0; i < body->numJoints(); i++) {
+            cnoid::LinkPtr j = body->joint(i);
+            if (j->parent() != nullptr) {
+                ROS_DEBUG_STREAM(j->name() << " - " << j->q());
+                ref_joint_state.name.push_back(j->name());
+                ref_joint_state.position.push_back(m_qRef.data[i]);
+            }
+        }
+
+        // set velocity if m_dqRef is available
+        if (m_dqRef.data.length() == body->numJoints()) {
+            for (unsigned int i = 0; i < body->numJoints(); i++) {
+                ref_joint_state.velocity.push_back(m_dqRef.data[i]);
+            }
+        } else {
+            double time_from_prev = (ref_joint_state.header.stamp - prev_ref_joint_state.header.stamp).toSec();
+            if (time_from_prev > 0 && prev_ref_joint_state.position.size() == ref_joint_state.position.size()) {
+                for (unsigned int i = 0; i < ref_joint_state.position.size(); i++) {
+                    ref_joint_state.velocity.push_back((ref_joint_state.position[i] - prev_ref_joint_state.position[i]) /
+                                                   time_from_prev);
+                }
+            } else {
+                ref_joint_state.velocity.resize(ref_joint_state.name.size());
+            }
+        }
+        prev_ref_joint_state = ref_joint_state;
+        // set effort if m_tauRef is available
+        if (m_tauRef.data.length() == body->numJoints()) {
+            for (unsigned int i = 0; i < body->numJoints(); i++) {
+                ref_joint_state.effort.push_back(m_tauRef.data[i]);
+            }
+        } else {
+            ref_joint_state.effort.resize(ref_joint_state.name.size());
+        }
+
+        ref_joint_state_pub.publish(ref_joint_state);
+        m_mutex.unlock();
+    }
 
     // m_mcangleIn
     if (m_mcangleIn.isNew()) {

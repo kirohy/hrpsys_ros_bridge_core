@@ -54,7 +54,7 @@ class HrpsysSeqStateROSBridge2 : public HrpsysSeqStateROSBridge2Impl {
 
   private:
     ros::NodeHandle nh;
-    ros::Publisher joint_state_pub, joint_controller_state_pub, mot_states_pub, diagnostics_pub, clock_pub, zmp_pub,
+    ros::Publisher joint_state_pub, ref_joint_state_pub, joint_controller_state_pub, mot_states_pub, diagnostics_pub, clock_pub, zmp_pub,
         ref_cp_pub, act_cp_pub, odom_pub, imu_pub, em_mode_pub, ref_contact_states_pub, act_contact_states_pub;
     ros::Subscriber trajectory_command_sub;
     std::vector<ros::Publisher> fsensor_pub, cop_pub;
@@ -71,6 +71,7 @@ class HrpsysSeqStateROSBridge2 : public HrpsysSeqStateROSBridge2Impl {
     std::mutex m_mutex;
     coil::TimeMeasure tm;
     sensor_msgs::JointState prev_joint_state;
+    sensor_msgs::JointState prev_ref_joint_state;
 
     std::string nameserver;
     std::string rootlink_name;

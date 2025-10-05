@@ -95,6 +95,13 @@ class HrpsysSeqStateROSBridge2Impl : public RTC::DataFlowComponentBase {
     RTC::TimedDoubleSeq m_mctorque;
     RTC::OutPort<RTC::TimedDoubleSeq> m_mctorqueOut;
 
+    RTC::TimedDoubleSeq m_qRef;
+    RTC::InPort<RTC::TimedDoubleSeq> m_qRefIn;
+    RTC::TimedDoubleSeq m_dqRef;
+    RTC::InPort<RTC::TimedDoubleSeq> m_dqRefIn;
+    RTC::TimedDoubleSeq m_tauRef;
+    RTC::InPort<RTC::TimedDoubleSeq> m_tauRefIn;
+
     RTC::CorbaPort m_SequencePlayerServicePort;
     RTC::CorbaConsumer<sequence_player::SequencePlayer2Service> m_service0;
 

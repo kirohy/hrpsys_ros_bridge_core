@@ -26,6 +26,7 @@ HrpsysSeqStateROSBridge2Impl::HrpsysSeqStateROSBridge2Impl(RTC::Manager *manager
       m_refContactStatesIn("refContactStates", m_refContactStates),
       m_actContactStatesIn("actContactStates", m_actContactStates),
       m_controlSwingSupportTimeIn("controlSwingSupportTime", m_controlSwingSupportTime),
+      m_qRefIn("qRef", m_qRef), m_dqRefIn("dqRef", m_dqRef), m_tauRefIn("tauRef", m_tauRef),
       m_mctorqueOut("mctorque", m_mctorque), m_SequencePlayerServicePort("SequencePlayer2Service") {}
 
 HrpsysSeqStateROSBridge2Impl::~HrpsysSeqStateROSBridge2Impl() {}
@@ -47,6 +48,9 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
     addInPort("refContactStates", m_refContactStatesIn);
     addInPort("actContactStates", m_actContactStatesIn);
     addInPort("controlSwingSupportTime", m_controlSwingSupportTimeIn);
+    addInPort("qRef", m_qRefIn);
+    addInPort("dqRef", m_dqRefIn);
+    addInPort("tauRef", m_tauRefIn);
 
     // Set OutPort buffer
     addOutPort("mctorque", m_mctorqueOut);
@@ -129,7 +133,15 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
         std::string joint_name = s->link()->name();
-        si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
+        if (joint_name.find("JOINT") != std::string::npos) {
+            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
+        } else if (joint_name.find("joint") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
+        } else if (joint_name.find("WAIST") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
+        } else {
+            si.link_name = joint_name;
+        }
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
     }
@@ -265,7 +277,16 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        si.link_name           = s->link()->name();
+        std::string joint_name = s->link()->name();
+        if (joint_name.find("JOINT") != std::string::npos) {
+            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
+        } else if (joint_name.find("joint") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
+        } else if (joint_name.find("WAIST") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
+        } else {
+            si.link_name = joint_name;
+        }
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
     }
@@ -288,7 +309,16 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        si.link_name           = s->link()->name();
+        std::string joint_name = s->link()->name();
+        if (joint_name.find("JOINT") != std::string::npos) {
+            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
+        } else if (joint_name.find("joint") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
+        } else if (joint_name.find("WAIST") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
+        } else {
+            si.link_name = joint_name;
+        }
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
     }
@@ -302,8 +332,19 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         cnoid::Vector3 localp = s->p_local();
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
-        si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        si.link_name           = s->link()->name();
+        tf::Quaternion flip;
+        flip.setRPY(cnoid::PI, 0, 0);
+        si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)) * flip);
+        std::string joint_name = s->link()->name();
+        if (joint_name.find("JOINT") != std::string::npos) {
+            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
+        } else if (joint_name.find("joint") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
+        } else if (joint_name.find("WAIST") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
+        } else {
+            si.link_name = joint_name;
+        }
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
     }
@@ -317,8 +358,19 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         cnoid::Vector3 localp = s->p_local();
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
-        si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        si.link_name           = s->link()->name();
+        tf::Quaternion flip;
+        flip.setRPY(cnoid::PI, 0, 0);
+        si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)) * flip);
+        std::string joint_name = s->link()->name();
+        if (joint_name.find("JOINT") != std::string::npos) {
+            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
+        } else if (joint_name.find("joint") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
+        } else if (joint_name.find("WAIST") != std::string::npos) {
+            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
+        } else {
+            si.link_name = joint_name;
+        }
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
     }
