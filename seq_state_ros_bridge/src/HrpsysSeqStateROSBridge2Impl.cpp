@@ -1,3 +1,4 @@
+#include <cnoid/VRMLBodyLoader>
 #include <seq_state_ros_bridge/HrpsysSeqStateROSBridge2Impl.h>
 
 // clang-format off
@@ -25,9 +26,9 @@ HrpsysSeqStateROSBridge2Impl::HrpsysSeqStateROSBridge2Impl(RTC::Manager *manager
       m_rsCOPInfoIn("rsCOPInfo", m_rsCOPInfo), m_emergencyModeIn("emergencyMode", m_emergencyMode),
       m_refContactStatesIn("refContactStates", m_refContactStates),
       m_actContactStatesIn("actContactStates", m_actContactStates),
-      m_controlSwingSupportTimeIn("controlSwingSupportTime", m_controlSwingSupportTime),
-      m_qRefIn("qRef", m_qRef), m_dqRefIn("dqRef", m_dqRef), m_tauRefIn("tauRef", m_tauRef),
-      m_mctorqueOut("mctorque", m_mctorque), m_SequencePlayerServicePort("SequencePlayer2Service") {}
+      m_controlSwingSupportTimeIn("controlSwingSupportTime", m_controlSwingSupportTime), m_qRefIn("qRef", m_qRef),
+      m_dqRefIn("dqRef", m_dqRef), m_tauRefIn("tauRef", m_tauRef), m_mctorqueOut("mctorque", m_mctorque),
+      m_SequencePlayerServicePort("SequencePlayer2Service") {}
 
 HrpsysSeqStateROSBridge2Impl::~HrpsysSeqStateROSBridge2Impl() {}
 
@@ -93,6 +94,9 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         RTC_INFO_STREAM("successed to load model [" << body_filename << "]");
     }
 
+    cnoid::VRMLBodyLoader *vrml_loader =
+        dynamic_cast<cnoid::VRMLBodyLoader *>(body_loader.lastActualBodyLoader().get());
+
     // Force Sensor Settings
     // coil::vstring virtual_force_sensor =
     // coil::split(prop["virtual_force_sensor"], ","); int npforce =
@@ -125,25 +129,22 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         m_mcforce[i].data.length(6);
         registerInPort(std::string("ref_" + s->name()).c_str(), *m_mcforceIn[i]);
         m_mcforceName.push_back(std::string("ref_" + s->name()));
-        RTC_INFO_STREAM(i << " physical force sensor : " << s->name());
 
         SensorInfo si;
         cnoid::Vector3 localp = s->p_local();
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        std::string joint_name = s->link()->name();
-        if (joint_name.find("JOINT") != std::string::npos) {
-            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
-        } else if (joint_name.find("joint") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
-        } else if (joint_name.find("WAIST") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
-        } else {
-            si.link_name = joint_name;
+        std::string segment_name        = "";
+        cnoid::VRMLNodePtr originalNode = vrml_loader->getOriginalNode(s->link());
+        if (originalNode && originalNode->isCategoryOf(cnoid::PROTO_INSTANCE_NODE)) {
+            cnoid::VRMLProtoInstance *proto_instance = static_cast<cnoid::VRMLProtoInstance *>(originalNode.get());
+            if (proto_instance->proto->protoName == "Segment") { segment_name = proto_instance->defName; }
         }
+        si.link_name           = segment_name;
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
+        RTC_INFO_STREAM(i << " physical force sensor : " << s->name() << ", " << segment_name);
     }
 
     // Sensor Settings
@@ -270,25 +271,22 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         m_gsensorIn[i]   = std::make_unique<RTC::InPort<RTC::TimedAcceleration3D>>(s->name().c_str(), m_gsensor[i]);
         m_gsensorName[i] = s->name().c_str();
         registerInPort(s->name().c_str(), *m_gsensorIn[i]);
-        RTC_INFO_STREAM(i << " acceleration sensor : " << s->name().c_str());
 
         SensorInfo si;
         cnoid::Vector3 localp = s->p_local();
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        std::string joint_name = s->link()->name();
-        if (joint_name.find("JOINT") != std::string::npos) {
-            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
-        } else if (joint_name.find("joint") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
-        } else if (joint_name.find("WAIST") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
-        } else {
-            si.link_name = joint_name;
+        std::string segment_name        = "";
+        cnoid::VRMLNodePtr originalNode = vrml_loader->getOriginalNode(s->link());
+        if (originalNode && originalNode->isCategoryOf(cnoid::PROTO_INSTANCE_NODE)) {
+            cnoid::VRMLProtoInstance *proto_instance = static_cast<cnoid::VRMLProtoInstance *>(originalNode.get());
+            if (proto_instance->proto->protoName == "Segment") { segment_name = proto_instance->defName; }
         }
+        si.link_name           = segment_name;
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
+        RTC_INFO_STREAM(i << " acceleration sensor : " << s->name() << ", " << segment_name);
     }
 
     cnoid::DeviceList<cnoid::RateGyroSensor> gyro_sensors(body->devices());
@@ -302,31 +300,27 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
             std::make_unique<RTC::InPort<RTC::TimedAngularVelocity3D>>(s->name().c_str(), m_gyrometer[i]);
         m_gyrometerName[i] = s->name().c_str();
         registerInPort(s->name().c_str(), *m_gyrometerIn[i]);
-        RTC_INFO_STREAM(i << " rate sensor : " << s->name().c_str());
 
         SensorInfo si;
         cnoid::Vector3 localp = s->p_local();
         si.transform.setOrigin(tf::Vector3(localp(0), localp(1), localp(2)));
         cnoid::Vector3 rpy = cnoid::rpyFromRot(s->R_local());
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)));
-        std::string joint_name = s->link()->name();
-        if (joint_name.find("JOINT") != std::string::npos) {
-            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
-        } else if (joint_name.find("joint") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
-        } else if (joint_name.find("WAIST") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
-        } else {
-            si.link_name = joint_name;
+        std::string segment_name        = "";
+        cnoid::VRMLNodePtr originalNode = vrml_loader->getOriginalNode(s->link());
+        if (originalNode && originalNode->isCategoryOf(cnoid::PROTO_INSTANCE_NODE)) {
+            cnoid::VRMLProtoInstance *proto_instance = static_cast<cnoid::VRMLProtoInstance *>(originalNode.get());
+            if (proto_instance->proto->protoName == "Segment") { segment_name = proto_instance->defName; }
         }
+        si.link_name           = segment_name;
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
+        RTC_INFO_STREAM(i << " rate sensor : " << s->name() << ", " << segment_name);
     }
 
     cnoid::DeviceList<cnoid::VisionSensor> vision_sensors(body->devices());
     for (unsigned int i = 0; i < vision_sensors.size(); i++) {
         cnoid::VisionSensorPtr s = vision_sensors[i];
-        RTC_INFO_STREAM(i << " vision sensor : " << s->name().c_str());
 
         SensorInfo si;
         cnoid::Vector3 localp = s->p_local();
@@ -335,24 +329,21 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         tf::Quaternion flip;
         flip.setRPY(cnoid::PI, 0, 0);
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)) * flip);
-        std::string joint_name = s->link()->name();
-        if (joint_name.find("JOINT") != std::string::npos) {
-            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
-        } else if (joint_name.find("joint") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
-        } else if (joint_name.find("WAIST") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
-        } else {
-            si.link_name = joint_name;
+        std::string segment_name        = "";
+        cnoid::VRMLNodePtr originalNode = vrml_loader->getOriginalNode(s->link());
+        if (originalNode && originalNode->isCategoryOf(cnoid::PROTO_INSTANCE_NODE)) {
+            cnoid::VRMLProtoInstance *proto_instance = static_cast<cnoid::VRMLProtoInstance *>(originalNode.get());
+            if (proto_instance->proto->protoName == "Segment") { segment_name = proto_instance->defName; }
         }
+        si.link_name           = segment_name;
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
+        RTC_INFO_STREAM(i << " vision sensor : " << s->name() << ", " << segment_name);
     }
 
     cnoid::DeviceList<cnoid::RangeSensor> range_sensors(body->devices());
     for (unsigned int i = 0; i < range_sensors.size(); i++) {
         cnoid::RangeSensorPtr s = range_sensors[i];
-        RTC_INFO_STREAM(i << " range sensor : " << s->name().c_str());
 
         SensorInfo si;
         cnoid::Vector3 localp = s->p_local();
@@ -361,18 +352,16 @@ RTC::ReturnCode_t HrpsysSeqStateROSBridge2Impl::onInitialize() {
         tf::Quaternion flip;
         flip.setRPY(cnoid::PI, 0, 0);
         si.transform.setRotation(tf::createQuaternionFromRPY(rpy(0), rpy(1), rpy(2)) * flip);
-        std::string joint_name = s->link()->name();
-        if (joint_name.find("JOINT") != std::string::npos) {
-            si.link_name           = joint_name.replace(joint_name.find("JOINT"), 5, "LINK");
-        } else if (joint_name.find("joint") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("joint"), 5, "link");
-        } else if (joint_name.find("WAIST") != std::string::npos) {
-            si.link_name = joint_name.replace(joint_name.find("WAIST"), 5, "BODY");
-        } else {
-            si.link_name = joint_name;
+        std::string segment_name        = "";
+        cnoid::VRMLNodePtr originalNode = vrml_loader->getOriginalNode(s->link());
+        if (originalNode && originalNode->isCategoryOf(cnoid::PROTO_INSTANCE_NODE)) {
+            cnoid::VRMLProtoInstance *proto_instance = static_cast<cnoid::VRMLProtoInstance *>(originalNode.get());
+            if (proto_instance->proto->protoName == "Segment") { segment_name = proto_instance->defName; }
         }
+        si.link_name           = segment_name;
         si.type_name           = s->typeName();
         sensor_info[s->name()] = si;
+        RTC_INFO_STREAM(i << " range sensor : " << s->name() << ", " << segment_name);
     }
 
     // initialize basePos, baseRpy
